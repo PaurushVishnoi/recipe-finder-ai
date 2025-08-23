@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Recipe Finder AI</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <style>
+      :root {
+        --bg: #fafafa;
+        --card: #fff;
+        --muted: #666;
+        --primary: #0077ff;
+        --primary-hover: #005fcc;
+        --badge-bg: #eef3ff;
+        --badge-fg: #0a3a88;
+        --error: #b00020;
+        --shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        --radius: 12px;
+      }
+      body {
+        font-family: system-ui, Segoe UI, Roboto, sans-serif;
+        margin: 2rem;
+        background: var(--bg);
+      }
+      h1 {
+        text-align: center;
+        margin-bottom: 1.25rem;
+      }
+      .row {
+        display: flex;
+        gap: 0.5rem;
+        margin: 0 auto 0.5rem;
+        max-width: 920px;
+      }
+      input[type="text"] {
+        flex: 1;
+        font-size: 1.1rem;
+        padding: 1rem 1.2rem;
+        border-radius: 12px;
+        border: 2px solid #ccc;
+        background: #fff;
+        min-width: 800px;
+        min-height: 50px; /* makes the box longer */
+        max-width: 700px; /* limits width on large screens */
+      }
+
+      button {
+        font-size: 1.1rem;
+        padding: 1rem 1.4rem;
+        border-radius: 12px;
+        background: var(--primary);
+        color: #fff;
+        border: none;
+        cursor: pointer;
+      }
+      button:hover {
+        background: var(--primary-hover);
+      }
+      button:disabled {
+        background: #9fbff7;
+        cursor: not-allowed;
+      }
+
+      .status {
+        max-width: 920px;
+        margin: 0.25rem auto 1rem;
+        display: grid;
+        gap: 0.25rem;
+      }
+      .muted {
+        color: var(--muted);
+        font-size: 0.95rem;
+      }
+      .error {
+        color: var(--error);
+        font-size: 0.95rem;
+      }
+      .invalid {
+        border-color: var(--error) !important;
+        box-shadow: 0 0 0 3px rgba(176, 0, 32, 0.12);
+      }
+
+      #results-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1rem;
+      }
+      .card {
+        background: var(--card);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        transition: transform 0.18s;
+      }
+      .card:hover {
+        transform: translateY(-2px);
+      }
+      .card img {
+        width: 100%;
+        height: 180px;
+        object-fit: cover;
+      }
+      .card-body {
+        padding: 1rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+      .title {
+        font-size: 1.15rem;
+        font-weight: bold;
+      }
+      .badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.35rem;
+      }
+      .badge {
+        padding: 0.2rem 0.5rem;
+        background: var(--badge-bg);
+        color: var(--badge-fg);
+        border-radius: 999px;
+        font-size: 0.8rem;
+      }
+      ul.ingredients {
+        margin: 0;
+        padding-left: 1.1rem;
+        font-size: 0.9rem;
+      }
+
+      .field-label {
+        font-size: 1rem;
+        font-weight: 500;
+        margin-bottom: 0.3rem;
+        display: inline-block;
+      }
+      .required {
+        color: #b00020;
+        margin-left: 0.2rem;
+      }
+      .row-column {
+        display: flex;
+        flex-direction: column;
+        max-width: 920px;
+        margin: 0 auto 0.5rem;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>🍳 Recipe Finder AI</h1>
+
+    <div class="row-column">
+      <label for="search-input" class="field-label">
+        Which recipe do you want to see <span class="required">*</span>
+      </label>
+      <div class="row">
+        <input
+          id="search-input"
+          type="text"
+          placeholder='e.g. "recipes with salami and cheese" or "under 15 minutes"'
+          required
+        />
+        <button id="search-button" disabled>Search</button>
+      </div>
+    </div>
+
+    <div class="status">
+      <div id="error-message" class="error" role="alert"></div>
+      <div id="sql-output" class="muted"></div>
+      <div id="count-output" class="muted"></div>
+    </div>
+
+    <div id="results-container"></div>
+
+    <script>
+      const inputEl = document.getElementById("search-input");
+      const buttonEl = document.getElementById("search-button");
+      const errorEl = document.getElementById("error-message");
+      const sqlEl = document.getElementById("sql-output");
+      const countEl = document.getElementById("count-output");
+      const resultsEl = document.getElementById("results-container");
+
+      function updateButtonState() {
+        const hasText = inputEl.value.trim().length > 0;
+        buttonEl.disabled = !hasText;
+        if (hasText) {
+          errorEl.textContent = "";
+          inputEl.classList.remove("invalid");
+        }
+      }
+      inputEl.addEventListener("input", updateButtonState);
+
+      async function search() {
+        const q = inputEl.value.trim();
+        if (!q) {
+          errorEl.textContent = "Please enter what you’re looking for.";
+          inputEl.classList.add("invalid");
+          inputEl.focus();
+          return;
+        }
+
+        resultsEl.innerHTML = "<div class='muted'>Loading...</div>";
+        errorEl.textContent = "";
+
+        const res = await fetch("/api/search", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ q }),
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          resultsEl.innerHTML = `<div class="card"><div class="card-body">Error: ${data.detail}</div></div>`;
+          sqlEl.textContent = "";
+          countEl.textContent = "";
+          return;
+        }
+
+        //sqlEl.innerHTML = `<b>SQL:</b> <code>${data.sql}</code>`;
+        //countEl.textContent = `${data.count} results`;
+
+        const out = (data.results || [])
+          .map((r) => {
+            const mins = (r.prep_time || 0) + (r.cook_time || 0);
+
+            // Build the image HTML (proxy + fallback placeholder)
+            const imgHtml = r.image
+              ? `<img
+         src="/img?url=${encodeURIComponent(r.image)}"
+         alt="${r.title || "Recipe image"}"
+         loading="lazy"
+         onerror="this.onerror=null; this.replaceWith(Object.assign(document.createElement('div'), {className:'img-placeholder'}));"
+       />`
+              : `<div class="img-placeholder"></div>`;
+
+            return `
+    <div class="card">
+      ${imgHtml}
+      <div class="card-body">
+        <div class="title">${r.title ?? ""}</div>
+        <div class="badges">
+          ${r.cuisine ? `<span class="badge">${r.cuisine}</span>` : ""}
+          ${r.category ? `<span class="badge">${r.category}</span>` : ""}
+          ${r.ratings ? `<span class="badge">⭐ ${r.ratings}</span>` : ""}
+          ${mins ? `<span class="badge">⏱️ ${mins} min</span>` : ""}
+        </div>
+        ${
+          r.ingredients_preview?.length
+            ? `<ul class="ingredients">${r.ingredients_preview
+                .map((i) => `<li>${i}</li>`)
+                .join("")}</ul>`
+            : ""
+        }
+      </div>
+    </div>
+  `;
+          })
+          .join("");
+
+        resultsEl.innerHTML =
+          out ||
+          "<div class='card'><div class='card-body'>(no results)</div></div>";
+      }
+
+      buttonEl.addEventListener("click", search);
+      inputEl.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") search();
+      });
+    </script>
+  </body>
+</html>
