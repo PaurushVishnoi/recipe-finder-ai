@@ -12,10 +12,9 @@ Built with **Python + SQLite**, designed to easily extend into **PostgreSQL + AI
 ## ⚡ Features
 - ✅ Load recipes from a JSON dataset into SQLite  
 - ✅ Clean schema with `title`, `ingredients`, `cuisine`, `ratings`, etc.  
-- ✅ Fast database setup with `create_db.py`  
-- 🔜 Full-text search (FTS5) on titles and ingredients  
+- ✅ Fast database setup with `init_db.py`
+- ✅ API (FastAPI) endpoints for `/search`
 - 🔜 Semantic search with embeddings (OpenAI or Hugging Face)  
-- 🔜 API (FastAPI) endpoints for `/search` and `/recipes/{id}`  
 
 ---
 
