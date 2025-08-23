@@ -68,6 +68,11 @@ This creates recipes.db from recipes-en.json.
 
 ### 3. Run the app 
 
+Run the server 
+```
+python -m uvicorn app.main:app --reload
+```
+
 Open the local host ( link ) :-
 ```
 http://127.0.0.1:8000/
