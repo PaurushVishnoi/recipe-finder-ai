@@ -1,19 +1,5 @@
-# Core
-python-dotenv==1.0.1
-pandas==2.2.2
-
-# Database
-sqlite-utils==3.36
-sqlalchemy==2.0.30
-
-# API (for when we add FastAPI endpoints)
-fastapi==0.111.0
-uvicorn==0.30.1
-
-# AI / NLP
-openai==1.35.13
-tiktoken==0.7.0
-
-# Optional: testing and linting
-pytest==8.2.2
-black==24.4.2
+python-dotenv
+openai>=1.0.0
+pandas
+fastapi
+uvicorn
