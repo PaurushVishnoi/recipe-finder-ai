@@ -9,8 +9,9 @@ from fastapi.responses import FileResponse, JSONResponse, StreamingResponse, Res
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from .db import get_conn
+from .db import get_conn, fetch_val
 from .llm_sql import nl_to_sql, clean_sql
+from .sql_utils import make_count_sql
 
 app = FastAPI(title="Recipe Finder AI")
 
@@ -109,6 +110,14 @@ def search(body: SearchBody):
             conn.close()
         except Exception:
             pass
+    
+    # 2b) Compute total matches (without LIMIT/OFFSET/ORDER BY)
+    try:
+        count_sql = make_count_sql(sql)
+        total_from_count_query = int(fetch_val(count_sql))
+    except Exception as e:
+        raise HTTPException(400, f"COUNT(*) error: {e}")
+    
 
     # 3) Enrich: if image missing but id present, fetch images in one query
     if rows and ("image" not in rows[0]) and ("id" in rows[0]):
@@ -131,4 +140,4 @@ def search(body: SearchBody):
             except Exception:
                 r["ingredients_preview"] = []
 
-    return {"sql": sql, "count": len(rows), "results": rows}
+    return {"sql": sql, "total": int(total_from_count_query), "results": rows}
