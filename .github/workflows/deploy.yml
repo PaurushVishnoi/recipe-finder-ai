@@ -1,0 +1,54 @@
+name: Build & Deploy to ECS (pvAWS)
+
+on:
+  push:
+    branches: [ pvAWS ]
+
+permissions:
+  id-token: write   # needed for OIDC
+  contents: read
+
+env:
+  AWS_REGION: eu-central-1
+  ECR_REPO: recipe-finder-ai-aws
+  CLUSTER: cluster-recipe
+  SERVICE: svc-recipe            # we'll create this in Step 11
+  IMAGE_TAG: latest
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: arn:aws:iam::052512440283:role/GitHubActionsDeployRole
+
+      - name: Login to Amazon ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build Docker image
+        run: |
+          docker build -t $ECR_REPO:$IMAGE_TAG -t $ECR_REPO:${{ github.sha }} .
+
+      - name: Tag & Push to ECR
+        run: |
+          ECR_URI=${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPO }}
+          docker tag $ECR_REPO:$IMAGE_TAG $ECR_URI:$IMAGE_TAG
+          docker tag $ECR_REPO:${{ github.sha }} $ECR_URI:${{ github.sha }}
+          docker push $ECR_URI:$IMAGE_TAG
+          docker push $ECR_URI:${{ github.sha }}
+
+      # This will succeed only after we create the ECS service in Step 11.
+      - name: Force new ECS deployment
+        run: |
+          aws ecs update-service \
+            --cluster $CLUSTER \
+            --service $SERVICE \
+            --force-new-deployment
+        continue-on-error: true   # harmless before the service exists
