@@ -5,6 +5,13 @@ from openai import OpenAI
 load_dotenv()
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
+import logging
+
+logging.basicConfig(level=logging.INFO)
+api = os.getenv("OPENAI_API_KEY", "")
+masked = (api[:4] + "..." + api[-2:]) if api else "MISSING"
+logging.info(f"[startup] OPENAI_API_KEY (masked) = {masked} | len={len(api)}")
+
 DEFAULT_LIMIT = 25
 
 SYSTEM_PROMPT = (
