@@ -80,3 +80,38 @@ http://127.0.0.1:8000/
 
 
 ### 🥳 You are good to cook now! 🔥🍳🥗
+
+---
+
+# AWS Deployment Guide
+
+This repository contains the code and deployment workflow for running **Recipe Finder AI** on **AWS ECS Fargate** with Docker, GitHub Actions, and supporting AWS infrastructure.
+
+The following guide explains the full setup process step by step.
+
+---
+
+## 🚀 Overview
+- Dockerized **FastAPI** app running on **ECS Fargate**
+- **OpenAI API key** stored securely in **AWS Secrets Manager**
+- Application logs sent to **CloudWatch Logs**
+- Networking handled by **Application Load Balancer (ALB)**
+- **CI/CD pipeline** with GitHub Actions → Amazon ECR → ECS
+
+---
+
+## 📋 Prerequisites
+- AWS Account with IAM permissions for **ECS, ECR, IAM, Secrets Manager, and CloudWatch**
+- GitHub repository with branch **`pvAWS`**
+- Docker installed locally
+- OpenAI API key
+
+## Deployment
+
+Switch to the branch pvAWS as are using this branch for CI/CD deployment
+
+```
+git checkout pvAWS
+```
+
+- [AWS Deployment Guide](./docs/AWS_DEPLOYMENT.md)
